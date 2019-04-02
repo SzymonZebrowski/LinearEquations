@@ -55,7 +55,7 @@ class Solver:
         except Exception as e:
             print(e)
 
-        return self.x
+        return self
 
     def jacobi_method(self, bound=10e-6):
         D = np.diag(self.A)
