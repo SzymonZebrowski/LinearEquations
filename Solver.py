@@ -127,7 +127,7 @@ class Solver:
         U = np.zeros((self.N, self.N))
 
         start = time.time()
-        #factorization
+        #decomposition
         for i in range(self.N):
             for j in range(0, i+1):
                 U[j, i] += self.A[j, i]
@@ -165,7 +165,7 @@ class Solver:
         self.x = x
         self.time_solved = end - start
         self.norm_res = np.linalg.norm(np.dot(self.A, self.x) - self.b)
-        print(self.x)
+        return self.x
 
     def info(self):
         print("#" * 30)

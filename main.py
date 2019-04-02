@@ -1,14 +1,13 @@
-from Solver import Solver
+from Analyzer import Analyzer
 import matplotlib.pyplot as plt
 
 e = 1
 
-zad1 = Solver(N=965, e=e, f=2, a1=5+e, a2=-1, a3=-1, method="Jacobi")
-zad2 = Solver(N=965, e=e, f=2, a1=5+e, a2=-1, a3=-1, method="Gauss-Seidl")
-
-zad1.solve(10e-9)
-zad2.solve(10e-9)
-
+#Analyzer.A()
+Analyzer.B()
+Analyzer.C()
+Analyzer.D()
+Analyzer.E()
 exit(12321)
 
 equations = [Solver(N=100, e=e, f=2, a1=5+e, a2=-1, a3=-1, method="Jacobi"),
