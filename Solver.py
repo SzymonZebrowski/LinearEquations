@@ -63,7 +63,8 @@ class Solver:
 
         i = 0
         start = time.time()
-        while np.linalg.norm(np.dot(self.A, self.x) - self.b) > bound:
+        #np.linalg.norm(np.dot(self.A, self.x) - self.b) > bound
+        while i<20:
             # x(k+1) = (b/D) - ( (L+U)*x(k) )/D
             # L+U = R
             s1 = time.time()
@@ -122,24 +123,22 @@ class Solver:
         return self.x
 
     def lu_method(self, bound):
-        L = np.diagflat([1.0]*self.N)
-        #U = np.copy(self.A)
-        U = np.zeros((self.N, self.N))
+        U = np.copy(self.A)
+        A = np.copy(self.A)
+        A = np.copy(self.A)
+        Ainv  = np.linalg.inv(A)
+
+        L = np.dot(Ainv, A)
 
         start = time.time()
         #decomposition
-        for i in range(self.N):
-            for j in range(0, i+1):
-                U[j, i] += self.A[j, i]
-                for k in range(j):
-                    U[j, i] -= L[j, k] * U[k, i]
 
-            for j in range(i+1, self.N):
-                for k in range(i):
-                    L[j, i] -= L[j, k] * U[k, i]
+        for k in range(self.N-1):
+            for j in range(k+1, self.N):
+                L[j, k] = U[j, k] / U[k, k]
+                U[j, k:self.N] -= L[j, k]*U[k, k:self.N]
 
-                L[j, i] += self.A[j, i]
-                L[j, i] /= U[i, i]
+
 
         #solving
         #forward substitution Ly = b
