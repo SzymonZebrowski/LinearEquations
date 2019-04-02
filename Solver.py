@@ -122,11 +122,50 @@ class Solver:
         return self.x
 
     def lu_method(self, bound):
-        L = np.tril(self.A)
-        U = np.triu(self.A)
-        #Lz = b
-        #Ux = z
+        L = np.diagflat([1.0]*self.N)
+        #U = np.copy(self.A)
+        U = np.zeros((self.N, self.N))
 
+        start = time.time()
+        #factorization
+        for i in range(self.N):
+            for j in range(0, i+1):
+                U[j, i] += self.A[j, i]
+                for k in range(j):
+                    U[j, i] -= L[j, k] * U[k, i]
+
+            for j in range(i+1, self.N):
+                for k in range(i):
+                    L[j, i] -= L[j, k] * U[k, i]
+
+                L[j, i] += self.A[j, i]
+                L[j, i] /= U[i, i]
+
+        #solving
+        #forward substitution Ly = b
+        y = np.zeros((self.N, 1))
+        y[0, 0] = self.b[0, 0] / L[0, 0]
+        for i in range(1, self.N):
+            sum = 0
+            for j in range(1, i):
+                sum += L[i, j] * y[j, 0]
+            y[i, 0] = (self.b[i, 0] - sum) / L[i, i]
+
+        #backward substitution Ux = y
+        x = np.zeros((self.N, 1))
+        x[self.N - 1, 0] = y[self.N - 1, 0] / U[self.N-1, self.N-1]
+        for i in range(self.N-2, -1, -1):
+            sum = 0
+            for j in range(i+1, self.N):
+                sum += U[i, j] * x[j, 0]
+            x[i, 0] = (y[i, 0] - sum) / U[i, i]
+
+        end = time.time()
+
+        self.x = x
+        self.time_solved = end - start
+        self.norm_res = np.linalg.norm(np.dot(self.A, self.x) - self.b)
+        print(self.x)
 
     def info(self):
         print("#" * 30)
