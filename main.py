@@ -1,57 +1,34 @@
-import numpy as np
-from scipy.linalg import solve
-N = 965
+from Solver import Solver
+import matplotlib.pyplot as plt
+
 e = 1
 
+zad1 = Solver(N=965, e=e, f=2, a1=5+e, a2=-1, a3=-1, method="Jacobi")
+zad2 = Solver(N=965, e=e, f=2, a1=5+e, a2=-1, a3=-1, method="Gauss-Seidl")
 
-class Solver:
-    def __init__(self, N, e, f, a1, a2, a3):
-        self.N = N
-        self.e = e
-        self.f = f
-        self.A = self.create_band_matrix(N, a1, a2, a3)
-        self.b = self.create_b_vector(N, f)
-        self.x = np.zeros((N, 1))
+zad1.solve(10e-9)
+zad2.solve(10e-9)
 
-    def create_band_matrix(self, n, a1, a2, a3):
-        band_matrix = np.zeros((n, n))
+exit(12321)
 
-        for i in range(n - 2):
-            band_matrix[i][i] = a1
-            band_matrix[i + 1][i] = a2
-            band_matrix[i + 2][i] = a3
-            band_matrix[i][i + 1] = a2
-            band_matrix[i][i + 2] = a3
+equations = [Solver(N=100, e=e, f=2, a1=5+e, a2=-1, a3=-1, method="Jacobi"),
+             Solver(N=500, e=e, f=2, a1=5 + e, a2=-1, a3=-1, method="Jacobi"),
+             Solver(N=1000, e=e, f=2, a1=5 + e, a2=-1, a3=-1, method="Jacobi"),
+             Solver(N=2000, e=e, f=2, a1=5 + e, a2=-1, a3=-1, method="Jacobi"),
+             Solver(N=5000, e=e, f=2, a1=5 + e, a2=-1, a3=-1, method="Jacobi")]
 
-        band_matrix[n - 2][n - 2] = a1
-        band_matrix[n - 1][n - 1] = a1
-        band_matrix[n - 2][n - 1] = a2
-        band_matrix[n - 1][n - 2] = a2
-
-        return band_matrix
-
-    def create_b_vector(self, n, f):
-        vec = np.zeros((n, 1))
-        for i in range(n):
-            vec[i][0] = np.sin(i*(f+1))
-        return vec
-
-    def jacobi_method(self, bound=10e-6):
-        D = np.diag(self.A)
-        R = self.A - np.diagflat(D)
-
-        i = 0
-        while np.linalg.norm(np.dot(self.A, self.x) - self.b) > bound:
-
-            self.x = (self.b - np.dot(R, self.x))/D
-            i+=1
-
-        print(i)
-        return self.x[:, 0].reshape((self.N, 1))
+times = []
+Ns = [100, 500, 1000, 2000, 5000]
+for eq in equations:
+    eq.jacobi_method(bound=10e-3)
+    times.append(eq.time_solved)
+    eq.info()
 
 
-zad1 = Solver(N=5, e=e, f=2, a1=5+e, a2=-1, a3=-1)
-x = zad1.jacobi_method(bound=10e-9)
-print(zad1.A)
+plt.plot(Ns, times)
+plt.show()
 
-print(x)
+
+
+
+
