@@ -35,15 +35,19 @@ class Solver:
     def create_b_vector(self, n, f):
         vec = np.zeros((n, 1))
         for i in range(n):
-            vec[i][0] = np.sin(i*(f+1))
+            vec[i][0] = np.sin((i+1)*(f+1))
         return vec
 
-    def solve(self, bound=10e-6):
+    def solve(self, bound=1e-9):
         func = None
         if self.method == "Jacobi":
             func = self.jacobi_method
         elif self.method == "Gauss-Seidl":
             func = self.gauss_seidl_method
+        elif self.method == "Jacobi_non_matrix":
+            func = self.jacobi_method_non_matrix
+        elif self.method == "Gauss-Seidl_non_matrix":
+            func = self.gauss_seidl_method_non_matrix
         elif self.method == "LU":
             func = self.lu_method
         else:
@@ -57,21 +61,23 @@ class Solver:
 
         return self
 
-    def jacobi_method(self, bound=10e-6):
+    def jacobi_method(self, bound=1e-9):
+        #matrix version
         D = np.diag(self.A)
         R = self.A - np.diagflat(D)
-
+        D_inv = np.linalg.inv(np.diagflat(D))
         i = 0
+        actual_residuum = np.linalg.norm(np.dot(self.A, self.x) - self.b) > bound
         start = time.time()
-        #np.linalg.norm(np.dot(self.A, self.x) - self.b) > bound
-        while i<20:
+
+        while actual_residuum > bound:
             # x(k+1) = (b/D) - ( (L+U)*x(k) )/D
             # L+U = R
             s1 = time.time()
             prev_residuum = np.linalg.norm(np.dot(self.A, self.x) - self.b)
             e1 = time.time()
 
-            self.x = np.dot(np.linalg.inv(np.diagflat(D)), (self.b - np.dot(R, self.x)))
+            self.x = np.dot(D_inv, (self.b - np.dot(R, self.x)))
 
             s2 = time.time()
             actual_residuum = np.linalg.norm(np.dot(self.A, self.x) - self.b)
@@ -90,11 +96,13 @@ class Solver:
         self.norm_res = np.linalg.norm(np.dot(self.A, self.x) - self.b)
         return self.x
 
-    def gauss_seidl_method(self, bound=10e-6):
+    def gauss_seidl_method(self, bound=1e-9):
+        #matrix version
+
         D = np.diag(self.A)
         L = np.tril(self.A, -1)
         U = np.triu(self.A, 1)
-
+        LU_inv = np.linalg.inv(L + np.diagflat(D))
         i = 0
         start = time.time()
         while np.linalg.norm(np.dot(self.A, self.x) - self.b) > bound:
@@ -103,7 +111,7 @@ class Solver:
             prev_residuum = np.linalg.norm(np.dot(self.A, self.x) - self.b)
             e1 = time.time()
 
-            self.x = np.dot(np.linalg.inv(L + np.diagflat(D)), (self.b - np.dot(U, self.x)))
+            self.x = np.dot(LU_inv, (self.b - np.dot(U, self.x)))
 
             s2 = time.time()
             actual_residuum = np.linalg.norm(np.dot(self.A, self.x) - self.b)
@@ -122,46 +130,107 @@ class Solver:
         self.norm_res = np.linalg.norm(np.dot(self.A, self.x) - self.b)
         return self.x
 
+    def jacobi_method_non_matrix(self, bound=1e-9):
+        x_n = np.ones((self.N, 1))
+
+        x = 0
+        start = time.time()
+        while np.linalg.norm(np.dot(self.A, self.x) - self.b) > bound:
+
+            s1 = time.time()
+            prev_residuum = np.linalg.norm(np.dot(self.A, self.x) - self.b)
+            e1 = time.time()
+
+            for i in range(self.N):
+                p1 = np.dot(self.A[i, :i], self.x[:i])
+                p2 = np.dot(self.A[i, i + 1:], self.x[i + 1:])
+                x_n[i, 0] = (self.b[i] - p1 - p2) / self.A[i, i]
+
+            self.x = np.copy(x_n)
+
+            s2 = time.time()
+            actual_residuum = np.linalg.norm(np.dot(self.A, self.x) - self.b)
+            e2 = time.time()
+
+            start -= ((e1 - s1)+(e2 - s2))
+
+            x += 1
+            if actual_residuum > prev_residuum:
+                raise Exception("Residuum doesn't convergence!")
+        end = time.time()
+        self.iterations = x
+        self.time_solved = end - start
+        self.norm_res = np.linalg.norm(np.dot(self.A, self.x) - self.b)
+        return self.x
+
+    def gauss_seidl_method_non_matrix(self, bound=1e-9):
+        x_n = np.ones((self.N, 1))
+
+        x = 0
+        start = time.time()
+        while np.linalg.norm(np.dot(self.A, self.x) - self.b) > bound:
+
+            s1 = time.time()
+            prev_residuum = np.linalg.norm(np.dot(self.A, self.x) - self.b)
+            e1 = time.time()
+
+            for i in range(self.N):
+                p1 = np.dot(self.A[i, :i], x_n[:i])
+                p2 = np.dot(self.A[i, i + 1:], self.x[i + 1:])
+                x_n[i, 0] = (self.b[i] - p1 - p2) / self.A[i, i]
+
+            self.x = np.copy(x_n)
+
+            s2 = time.time()
+            actual_residuum = np.linalg.norm(np.dot(self.A, self.x) - self.b)
+            e2 = time.time()
+
+            start -= ((e1 - s1) + (e2 - s2))
+
+            x += 1
+            if actual_residuum > prev_residuum:
+                raise Exception("Residuum doesn't convergence!")
+        end = time.time()
+        self.iterations = x
+        self.time_solved = end - start
+        self.norm_res = np.linalg.norm(np.dot(self.A, self.x) - self.b)
+        return self.x
+
     def lu_method(self, bound):
         U = np.copy(self.A)
-        A = np.copy(self.A)
-        A = np.copy(self.A)
-        Ainv  = np.linalg.inv(A)
-
-        L = np.dot(Ainv, A)
+        L = np.eye(self.N)
 
         start = time.time()
         #decomposition
 
+
         for k in range(self.N-1):
             for j in range(k+1, self.N):
-                L[j, k] = U[j, k] / U[k, k]
+                L[j,k] = U[j,k]/U[k,k]
                 U[j, k:self.N] -= L[j, k]*U[k, k:self.N]
-
 
 
         #solving
         #forward substitution Ly = b
-        y = np.zeros((self.N, 1))
-        y[0, 0] = self.b[0, 0] / L[0, 0]
+        y = np.zeros(self.N)
+        y[0] = self.b[0]/L[0, 0]
+        #y[0, 0] = self.b[0, 0] / L[0, 0]
         for i in range(1, self.N):
             sum = 0
-            for j in range(1, i):
-                sum += L[i, j] * y[j, 0]
-            y[i, 0] = (self.b[i, 0] - sum) / L[i, i]
+            for j in range(0, i):
+                sum += L[i, j] * y[j]
+            y[i] = (self.b[i]) - sum / L[i, i]
 
         #backward substitution Ux = y
-        x = np.zeros((self.N, 1))
-        x[self.N - 1, 0] = y[self.N - 1, 0] / U[self.N-1, self.N-1]
-        for i in range(self.N-2, -1, -1):
-            sum = 0
-            for j in range(i+1, self.N):
-                sum += U[i, j] * x[j, 0]
-            x[i, 0] = (y[i, 0] - sum) / U[i, i]
+
+        for i in range(self.N-1, -1, -1):
+            sum = y[i]
+            for j in range(i, self.N):
+                if i!=j:
+                    sum -= U[i, j] * self.x[j]
+            self.x[i] = sum / U[i, i]
 
         end = time.time()
-
-        self.x = x
         self.time_solved = end - start
         self.norm_res = np.linalg.norm(np.dot(self.A, self.x) - self.b)
         return self.x
