@@ -1,7 +1,7 @@
 # LinearEquations
 A project for Numerical Methods course
 
-Description of project in Polish in Projkent_MN2.df.
+Description of project in Polish in Projekt_MN2.pdf.
 
 To run type main.py in terminal and arguments.
 Available arguments are:
