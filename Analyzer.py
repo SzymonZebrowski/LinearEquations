@@ -1,6 +1,9 @@
 from Solver import Solver
 import matplotlib.pyplot as plt
+import threading
 import multiprocessing as mul
+
+'''To run E_parallel() Analyzer class and s function must be in main.py'''
 
 def s(x):
     return x.solve()
@@ -23,17 +26,12 @@ class Analyzer:
     def B():
         print("="*16+"B"+"="*16)
 
-        equation1 = Solver(N=500, e=e, f=2, a1=5+e, a2=-1, a3=-1, method="Jacobi")
-        equation2 = Solver(N=500, e=e, f=2, a1=5+e, a2=-1, a3=-1, method="Gauss-Seidl")
-
-        equation1.solve(bound=10e-9)
-        equation2.solve(bound=10e-9)
-
         equation1 = Solver(N=900 + 10 * c + d, e=e, f=2, a1=5 + e, a2=-1, a3=-1, method="Jacobi")
         equation2 = Solver(N=900 + 10 * c + d, e=e, f=2, a1=5 + e, a2=-1, a3=-1, method="Gauss-Seidl")
 
         equation1.solve(bound=10e-9)
         equation2.solve(bound=10e-9)
+
 
     @staticmethod
     def C():
@@ -45,12 +43,15 @@ class Analyzer:
         equation1.solve(bound=10e-9)
         equation2.solve(bound=10e-9)
 
+
     @staticmethod
     def D():
         print("="*16+"D"+"="*16)
 
         equation = Solver(N=900 + 10 * c + d, e=e, f=2, a1=3, a2=-1, a3=-1, method="LU")
         equation.solve(bound=10e-9)
+
+
 
     @staticmethod
     def E():
@@ -87,7 +88,7 @@ class Analyzer:
         times_lu = []
         for i in range(6):
             for eq in zipped[i]:
-                eq.solve()
+                eq.solve(bound=10e-9)
             times_jacobi.append(zipped[i][0].time_solved)
             times_gauss_seidl.append(zipped[i][1].time_solved)
             times_lu.append(zipped[i][2].time_solved)
@@ -99,6 +100,8 @@ class Analyzer:
         plt.xlabel('Size of matrix')
         plt.ylabel('Time [s]')
         plt.legend(loc='best')
+        plt.yscale("log")
+        plt.savefig("wykresy.jpg")
         plt.show()
 
     @staticmethod
@@ -134,14 +137,19 @@ class Analyzer:
         times_gauss_seidl = []
         times_lu = []
         for i in range(6):
-            pool = mul.Pool(processes=3)
-            r = pool.map(s, zipped[i])
-            zipped[i] = r
+            thread0 = threading.Thread(target=s, args=(zipped[i][0],))
+            thread1 = threading.Thread(target=s, args=(zipped[i][1],))
+            thread2 = threading.Thread(target=s, args=(zipped[i][2],))
+            thread0.start()
+            thread1.start()
+            thread2.start()
+            thread0.join()
+            thread1.join()
+            thread2.join()
+
             times_jacobi.append(zipped[i][0].time_solved)
             times_gauss_seidl.append(zipped[i][1].time_solved)
             times_lu.append(zipped[i][2].time_solved)
-            pool.close()
-            pool.join()
 
         plt.plot(Ns, times_jacobi, label='Jacobi method')
         plt.plot(Ns, times_gauss_seidl, label='Gauss-Seidl method')
@@ -150,6 +158,9 @@ class Analyzer:
         plt.xlabel('Size of matrix')
         plt.ylabel('Time [s]')
         plt.legend(loc='best')
+        plt.yscale("log")
+        plt.savefig("wykresy.jpg")
         plt.show()
+
 
 
