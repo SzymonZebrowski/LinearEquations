@@ -40,13 +40,13 @@ class Solver:
 
     def solve(self, bound=1e-9):
         func = None
-        if self.method == "Jacobi":
+        if self.method == "Jacobi_inv":
             func = self.jacobi_method
-        elif self.method == "Gauss-Seidl":
+        elif self.method == "Gauss-Seidl_inv":
             func = self.gauss_seidl_method
-        elif self.method == "Jacobi_non_matrix":
+        elif self.method == "Jacobi":
             func = self.jacobi_method_non_matrix
-        elif self.method == "Gauss-Seidl_non_matrix":
+        elif self.method == "Gauss-Seidl":
             func = self.gauss_seidl_method_non_matrix
         elif self.method == "LU":
             func = self.lu_method
@@ -62,6 +62,7 @@ class Solver:
         return self
 
     def jacobi_method(self, bound=1e-9):
+        '''bad implementation, we shouldn't inverse matrix'''
         #matrix version
         D = np.diag(self.A)
         R = self.A - np.diagflat(D)
@@ -97,6 +98,7 @@ class Solver:
         return self.x
 
     def gauss_seidl_method(self, bound=1e-9):
+        '''bad implementation, we shouldn't inverse matrix'''
         #matrix version
 
         D = np.diag(self.A)
@@ -131,6 +133,7 @@ class Solver:
         return self.x
 
     def jacobi_method_non_matrix(self, bound=1e-9):
+        '''good version without inversing matrix'''
         x_n = np.ones((self.N, 1))
 
         x = 0
@@ -155,8 +158,8 @@ class Solver:
             start -= ((e1 - s1)+(e2 - s2))
 
             x += 1
-            if actual_residuum > prev_residuum:
-                raise Exception("Residuum doesn't convergence!")
+            if x>1000:
+                raise Exception(f"Residuum doesn't convergence after {x} iterations!")
         end = time.time()
         self.iterations = x
         self.time_solved = end - start
@@ -164,6 +167,7 @@ class Solver:
         return self.x
 
     def gauss_seidl_method_non_matrix(self, bound=1e-9):
+        '''good version without inversing matrix'''
         x_n = np.ones((self.N, 1))
 
         x = 0
@@ -188,8 +192,8 @@ class Solver:
             start -= ((e1 - s1) + (e2 - s2))
 
             x += 1
-            if actual_residuum > prev_residuum:
-                raise Exception("Residuum doesn't convergence!")
+            if x>1000:
+                raise Exception(f"Residuum doesn't convergence after {x} iterations!")
         end = time.time()
         self.iterations = x
         self.time_solved = end - start
